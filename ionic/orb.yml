@@ -1,5 +1,140 @@
 version: 2.1
 
+test_params: &test_params
+  skip-tests:
+    type: boolean
+    default: false
+  skip-lint:
+    type: boolean
+    default: false
+  skip-e2e:
+    type: boolean
+    default: false
+  custom-npm-login:
+    type: boolean
+    default: false
+  persist-results:
+    description: Deprecated
+    type: boolean
+    default: false
+  skip-sonar:
+    description: Deprecated
+    type: boolean
+    default: false
+  build-params:
+    description: Deprecated
+    type: string
+    default: 'deprecated'
+
+pwa_params: &pwa_params
+  node-version:
+    type: string
+    default: '14'
+  custom-npm-login:
+    type: boolean
+    default: false
+  build-params:
+    type: string
+    default: '--prod'
+  pwa-path:
+    type: string
+    default: 'www'
+  skip-inline-sourcemaps:
+    type: boolean
+    default: false
+  package-path:
+    description: Deprecated
+    type: string
+    default: 'deprecated'
+
+ios_params: &ios_params
+  package-name:
+    type: string
+  team-id:
+    type: string
+  attach-workspace:
+    type: boolean
+    default: false
+  development-provisioning-name:
+    type: string
+  distribution-provisioning-name:
+    type: string
+  development-signing-password:
+    type: string
+    default: ''
+  distribution-signing-password:
+    type: string
+    default: ''
+  node-version:
+    type: enum
+    default: ''
+    enum: [ '', '12', '14', 'latest' ]
+  cordova-version:
+    type: string
+    default: 'latest'
+  cocoapods-version:
+    type: string
+    default: ''
+  fastlane-version:
+    type: string
+    default: ''
+  dev-certs-repo-url:
+    type: string
+    default: ''
+  dist-certs-repo-url:
+    type: string
+    default: ''
+  ssh-permission-fingerprint:
+    type: string
+    default: ''
+  custom-npm-login:
+    type: boolean
+    default: false
+  update-brew:
+    type: boolean
+    default: false
+  pwa-path:
+    type: string
+    default: 'www'
+  cocoapods-lock-path:
+    description: Deprecated
+    type: string
+    default: 'deprecated'
+
+android_params: &android_params
+  attach-workspace:
+    type: boolean
+    default: false
+  node-version:
+    type: string
+    default: '14'
+  cordova-version:
+    type: string
+    default: 'latest'
+  gradle-version:
+    type: string
+    default: ''
+  dist-certs-repo-url:
+    type: string
+    default: ''
+  ssh-permission-fingerprint:
+    type: string
+    default: ''
+  custom-npm-login:
+    type: boolean
+    default: false
+  pwa-path:
+    type: string
+    default: 'www'
+  skip-upgrade-android-sdk:
+    type: boolean
+    default: false
+  api-version:
+    description: Android SDK version
+    type: enum
+    enum: [ '23', '24', '25', '26', '27', '28', '29' ]
+    default: '29'
+
 description: |
   Build and publish hybrid Apps for iOS / Android
   Repository: https://github.com/okode/orbs
@@ -12,36 +147,86 @@ orbs:
 jobs:
   test:
     parameters:
+      << : *test_params
       node-version:
         type: string
         default: '14'
-      skip-tests:
-        type: boolean
-        default: false
-      skip-lint:
-        type: boolean
-        default: false
-      skip-e2e:
-        type: boolean
-        default: false
-      custom-npm-login:
-        type: boolean
-        default: false
-      persist-results:
-        description: Deprecated
-        type: boolean
-        default: false
-      skip-sonar:
-        description: Deprecated
-        type: boolean
-        default: false
-      build-params:
-        description: Deprecated
-        type: string
-        default: 'deprecated'
     executor:
       name: common/node-browsers
       node-version: << parameters.node-version >>
+    steps:
+      - test:
+          skip-tests: << parameters.skip-tests >>
+          skip-lint: << parameters.skip-lint >>
+          skip-e2e: << parameters.skip-e2e >>
+          custom-npm-login: << parameters.custom-npm-login >>
+          persist-results: << parameters.persist-results >>
+          skip-sonar: << parameters.skip-sonar >>
+          build-params: << parameters.build-params >>
+  pwa:
+    parameters:
+      << : *pwa_params
+    executor: common/node-machine
+    steps:
+      - pwa:
+          node-version: << parameters.node-version >>
+          custom-npm-login: << parameters.custom-npm-login >>
+          build-params: << parameters.build-params >>
+          pwa-path: << parameters.pwa-path >>
+          skip-inline-sourcemaps: << parameters.skip-inline-sourcemaps >>
+          package-path: << parameters.package-path >>
+  ios:
+    parameters:
+      << : *ios_params
+      xcode-version:
+        type: string
+        default: '12.1.0'
+    macos:
+      xcode: "<< parameters.xcode-version >>"
+    steps:
+      - ios:
+          package-name: << parameters.package-name >>
+          team-id: << parameters.team-id >>
+          attach-workspace: << parameters.attach-workspace >>
+          development-provisioning-name: << parameters.development-provisioning-name >>
+          distribution-provisioning-name: << parameters.distribution-provisioning-name >>
+          development-signing-password: << parameters.development-signing-password >>
+          distribution-signing-password: << parameters.distribution-signing-password >>
+          node-version: << parameters.node-version >>
+          cordova-version: << parameters.cordova-version >>
+          cocoapods-version: << parameters.cocoapods-version >>
+          fastlane-version: << parameters.fastlane-version >>
+          dev-certs-repo-url: << parameters.dev-certs-repo-url >>
+          dist-certs-repo-url: << parameters.dist-certs-repo-url >>
+          ssh-permission-fingerprint: << parameters.ssh-permission-fingerprint >>
+          custom-npm-login: << parameters.custom-npm-login >>
+          update-brew: << parameters.update-brew >>
+          pwa-path: << parameters.pwa-path >>
+          cocoapods-lock-path: << parameters.cocoapods-lock-path >>
+  android:
+    parameters:
+      << : *android_params
+    executor:
+      name: android/android
+      sdk-version: << parameters.api-version >>
+      variant: 'node'
+    steps:
+      - android:
+          attach-workspace: << parameters.attach-workspace >>
+          node-version: << parameters.node-version >>
+          cordova-version: << parameters.cordova-version >>
+          gradle-version: << parameters.gradle-version >>
+          dist-certs-repo-url: << parameters.dist-certs-repo-url >>
+          ssh-permission-fingerprint: << parameters.ssh-permission-fingerprint >>
+          custom-npm-login: << parameters.custom-npm-login >>
+          pwa-path: << parameters.pwa-path >>
+          skip-upgrade-android-sdk: << parameters.skip-upgrade-android-sdk >>
+          api-version: << parameters.api-version >>
+
+commands:
+  test:
+    parameters:
+      << : *test_params
     steps:
       - run:
           name: Checking deprecated parameters
@@ -61,7 +246,7 @@ jobs:
               echo "Parameter persist-results is deprecated"
             fi
       - checkout
-      - when: 
+      - when:
           condition: << parameters.custom-npm-login >>
           steps:
             - run:
@@ -102,26 +287,7 @@ jobs:
             - www
   pwa:
     parameters:
-      node-version:
-        type: string
-        default: '14'
-      custom-npm-login:
-        type: boolean
-        default: false
-      build-params:
-        type: string
-        default: '--prod'
-      pwa-path:
-        type: string
-        default: 'www'
-      skip-inline-sourcemaps:
-        type: boolean
-        default: false
-      package-path:
-        description: Deprecated
-        type: string
-        default: 'deprecated'
-    executor: common/node-machine
+      << : *pwa_params
     steps:
       - run:
           name: Checking deprecated parameters
@@ -183,63 +349,7 @@ jobs:
             - output/pwa.zip
   ios:
     parameters:
-      package-name:
-        type: string
-      team-id:
-        type: string
-      attach-workspace:
-        type: boolean
-        default: false
-      development-provisioning-name:
-        type: string
-      distribution-provisioning-name:
-        type: string
-      development-signing-password:
-        type: string
-        default: ''
-      distribution-signing-password:
-        type: string
-        default: ''
-      node-version:
-        type: enum
-        default: ''
-        enum: [ '', '12', '14', 'latest' ]
-      cordova-version:
-        type: string
-        default: 'latest'
-      cocoapods-version:
-        type: string
-        default: ''
-      fastlane-version:
-        type: string
-        default: ''
-      xcode-version:
-        type: string
-        default: '12.1.0'
-      dev-certs-repo-url:
-        type: string
-        default: ''
-      dist-certs-repo-url:
-        type: string
-        default: ''
-      ssh-permission-fingerprint:
-        type: string
-        default: ''
-      custom-npm-login:
-        type: boolean
-        default: false
-      update-brew:
-        type: boolean
-        default: false
-      pwa-path:
-        type: string
-        default: 'www'
-      cocoapods-lock-path:
-        description: Deprecated
-        type: string
-        default: 'deprecated'
-    macos:
-      xcode: "<< parameters.xcode-version >>"
+      << : *ios_params
     steps:
       - run:
           name: Checking deprecated parameters
@@ -325,42 +435,7 @@ jobs:
             fi
   android:
     parameters:
-      attach-workspace:
-        type: boolean
-        default: false
-      node-version:
-        type: string
-        default: '14'
-      cordova-version:
-        type: string
-        default: 'latest'
-      gradle-version:
-        type: string
-        default: ''
-      dist-certs-repo-url:
-        type: string
-        default: ''
-      ssh-permission-fingerprint:
-        type: string
-        default: ''
-      custom-npm-login:
-        type: boolean
-        default: false
-      pwa-path:
-        type: string
-        default: 'www'
-      skip-upgrade-android-sdk:
-        type: boolean
-        default: false
-      api-version:
-        description: Android SDK version
-        type: enum
-        enum: [ '23', '24', '25', '26', '27', '28', '29' ]
-        default: '29'
-    executor:
-      name: android/android
-      sdk-version: << parameters.api-version >>
-      variant: 'node'
+      << : *android_params
     steps:
       - checkout
       - run:
